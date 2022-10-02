@@ -18,7 +18,7 @@
 #endif
 
 // SOIL é a biblioteca para leitura das imagens
-#include "lib/SOIL/SOIL.h"
+#include "SOIL.h"
 
 // Um pixel Pixel (24 bits)
 typedef struct
