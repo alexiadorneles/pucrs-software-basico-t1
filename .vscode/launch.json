@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/seeing",
             "args": [
-                "beach.png"
+                "trees.png"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
