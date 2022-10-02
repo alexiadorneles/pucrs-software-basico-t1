@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h> // Para usar strings
+#include <stdbool.h>
 
 #ifdef WIN32
 #include <windows.h> // Apenas para Windows
@@ -44,6 +45,9 @@ void keyboard(unsigned char key, int x, int y);
 
 // Largura e altura da janela
 int width, height;
+
+// Métodos próprios
+Pixel **criarMatriz(Pixel (*in)[width], int i, int j);
 
 // Fator de multiplicação do ruído
 int fator;
@@ -132,6 +136,89 @@ int main(int argc, char **argv)
     glutMainLoop();
 }
 
+Pixel **criarMatriz(Pixel (*in)[width], int i, int j)
+{
+    Pixel matriz[3][3] = {};
+    int iNorte = i - 1;
+    int jNorte = j;
+
+    int iLeste = i;
+    int jLeste = j + 1;
+
+    int iSul = i + 1;
+    int jSul = j;
+
+    int iOeste = i;
+    int jOeste = j - 1;
+
+    int iNordeste = i - 1;
+    int jNordeste = j + 1;
+
+    int iSudeste = i + 1;
+    int jSudeste = j + 1;
+
+    int iNoroeste = i - 1;
+    int jNoroeste = j - 1;
+
+    int iSudoeste = i + 1;
+    int jSudoeste = j - 1;
+
+    // cantos
+    bool cantoSuperiorEsquerdo = i == 0 && j == 0;
+    bool cantoSuperiorDireito = i == 0 && j == width - 1;
+    bool cantoInferiorEsquerdo = i == width - 1 && j == 0;
+    bool cantoInferiorDireito = i == width - 1 && j == width - 1;
+
+    if (cantoSuperiorEsquerdo || cantoInferiorDireito)
+    {
+        Pixel sudeste = in[iSudeste][jSudeste];
+        // sudoeste
+        matriz[2][0] = sudeste;
+        // nordeste
+        matriz[0][2] = sudeste;
+    }
+
+    if (cantoSuperiorDireito || cantoInferiorEsquerdo)
+    {
+        Pixel sudoeste = in[iSudoeste][jSudoeste];
+        // noroeste
+        matriz[0][0] = sudoeste;
+        // sudeste
+        matriz[2][2] = sudoeste;
+    }
+
+    matriz[1][1] = in[i][j];
+
+    bool norteEhValido = iNorte >= 0 && iNorte <= width && jNorte >= 0 && jNorte <= height;
+    matriz[0][1] = norteEhValido ? in[iNorte][jNorte] : in[iSul][jSul];
+    bool sulEhValido = iSul >= 0 && iSul <= width && jSul >= 0 && jSul <= height;
+    matriz[2][1] = sulEhValido ? in[iSul][jSul] : in[iNorte][jNorte];
+
+    bool lesteEhValido = iLeste >= 0 && iLeste <= width && jLeste >= 0 && jLeste <= height;
+    matriz[1][2] = lesteEhValido ? in[iLeste][jLeste] : in[iOeste][jOeste];
+    bool oesteEhValido = iOeste >= 0 && iOeste <= width && jOeste >= 0 && jOeste <= height;
+    matriz[1][0] = oesteEhValido ? in[iOeste][jOeste] : in[iLeste][jLeste];
+
+    if (!cantoSuperiorEsquerdo && !cantoInferiorDireito)
+    {
+
+        bool nordesteEhValido = iNordeste >= 0 && iNordeste <= width && jNordeste >= 0 && jNordeste <= height;
+        matriz[0][2] = nordesteEhValido ? in[iNordeste][jNordeste] : in[iSudoeste][jSudoeste];
+        bool sudoesteEhValido = iSudoeste >= 0 && iSudoeste <= width && jSudoeste >= 0 && jSudoeste <= height;
+        matriz[2][0] = sudoesteEhValido ? in[iSudoeste][jSudoeste] : in[iNordeste][jNordeste];
+    }
+
+    if (!cantoSuperiorDireito && !cantoInferiorEsquerdo)
+    {
+        bool noroesteEhValido = iNoroeste >= 0 && iNoroeste <= width && jNoroeste >= 0 && jNoroeste <= height;
+        matriz[0][0] = noroesteEhValido ? in[iNoroeste][jNoroeste] : in[iSudeste][jSudeste];
+        bool sudesteEhValido = iSudeste >= 0 && iSudeste <= width && jSudeste >= 0 && jSudeste <= height;
+        matriz[2][2] = sudesteEhValido ? in[iSudeste][jSudeste] : in[iNoroeste][jNoroeste];
+    }
+
+    return matriz;
+}
+
 // Aplica o algoritmo e gera a saída em pic[1]
 void processa()
 {
@@ -143,79 +230,38 @@ void processa()
     // ...
     // ...
     int regsize = 3;
-    int tam= regsize * regsize;
+    int tam = regsize * regsize;
 
     printf("Region size*size: %d\n", tam);
     printf("Fator: %d\n\n", fator);
 
     // Exemplo: inverte as cores da imagem de entrada
-    for(int i=0; i<height; i++) {
-        for(int j=0; j<width; j++) {
-            // out[y][x].r = 255 - in[y][x].r;
-            // out[y][x].g = 255 - in[y][x].g;
-            // out[y][x].b = 255 - in[y][x].b;
-            
-            Pixel pixel = in[i][j];
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
 
-            // i = linha
-            // j = coluna
-            // montar o 3x3
-            //  if (i == 0 || i == width || j == 0 || j == height) {
-            //  
-            //  matriz[3][3] = {} 
-            //
-            //   int iNorte = i - 1;
-            //   int jNorte = j;
-            //
-            //   int iLeste = i;
-            //   int jLeste = j + 1;
-            //
-            //   int iSul = i + 1;
-            //   int jSul = j;
-            //
-            //   int iOeste = i;
-            //   int jOeste = j - 1;
-            //
-            //   int iNordeste = i - 1;
-            //   int jNordeste = j + 1;
-            //
-            //   int iSudeste = i + 1;
-            //   int jSudeste = j + 1;
-            //
-            //   int iNoroeste = i - 1;
-            //   int jNoroeste = j - 1;
-            //
-            //   int iSudoeste = i + 1;
-            //   int jSudoeste = j - 1;
-            //   
-            //   bool norteEhValido = iNorte >= 0 && iNorte <= width && jNorte >= 0 && jNorte <= height
-            //   matriz[1][1] = norteEhValido ? in[iNorte][jNorte] : in[iSul][jSul] 
-            //   ... replicar isso para todos os outros pontos ...
-            //   lembrando que: norte e sul são equivalentes 
-            //   lembrando que: leste e oeste são equivalentes 
-            //   lembrando que: nordeste e sudoeste são equivalentes 
-            //   lembrando que: noroeste e sudeste são equivalentes 
-            //   
-            // } 
-            // 
+            Pixel **matriz = criarMatriz(in, i, j);
+
+            out[i][j].r = 255 - in[i][j].r;
+            out[i][j].g = 255 - in[i][j].g;
+            out[i][j].b = 255 - in[i][j].b;
+
             // criar o array imutavel com os pixeis (com r, g, b)
             // cria struct da luminancia com id
             // cria um arrau com essas structs
             // ordena o array de cima pela luminancia
-            // pega mediana 
+            // pega mediana
             // pega a cor da mediana a partir do id dentro do array imutavel
             // pixelOriginal.r = pixelOriginal.r - mediana.r < 0 ? 0 : pixelOriginal.r - mediana.r
             // pixelOriginal.g = pixelOriginal.g - mediana.g < 0 ? 0 : pixelOriginal.g - mediana.g
             // pixelOriginal.b = pixelOriginal.b - mediana.b < 0 ? 0 : pixelOriginal.b - mediana.b
             // out[i][j] = pixelOriginal
-
-
-
         }
     }
 
     // Se desejar salvar a imagem de saída, descomente a linha abaixo
-    //SOIL_save_image("out.bmp", SOIL_SAVE_TYPE_BMP, pic[1].width, pic[1].height, 3, (const unsigned char *)pic[1].img);
+    // SOIL_save_image("out.bmp", SOIL_SAVE_TYPE_BMP, pic[1].width, pic[1].height, 3, (const unsigned char *)pic[1].img);
 
     // Faz upload da nova textura na GPU - NÃO ALTERAR
     glBindTexture(GL_TEXTURE_2D, tex[1]);
@@ -224,7 +270,6 @@ void processa()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, out);
 }
-
 
 // Gerencia eventos de teclado
 void keyboard(unsigned char key, int x, int y)
@@ -240,11 +285,13 @@ void keyboard(unsigned char key, int x, int y)
         // 1-2: seleciona a imagem correspondente (origem ou destino)
         sel = key - '1';
 
-    if(key == '=') {
+    if (key == '=')
+    {
         fator += 5;
         processa();
     }
-    if(key == '-') {
+    if (key == '-')
+    {
         fator -= 5;
         processa();
     }
