@@ -53,8 +53,8 @@ void keyboard(unsigned char key, int x, int y);
 int width, height;
 
 // Métodos próprios
-Pixel **criarMatriz(Pixel (*in)[width], int i, int j);
-Pixel *criarArrayDePixels(Pixel matriz[3][3]);
+void criarMatriz(Pixel (*in)[width], int i, int j, Pixel matriz[3][3]);
+void criarArrayDePixels(Pixel array[9], Pixel matriz[3][3]);
 int transformaLuminancia(Pixel pixel);
 
 // Fator de multiplicação do ruído
@@ -144,9 +144,8 @@ int main(int argc, char **argv)
     glutMainLoop();
 }
 
-Pixel **criarMatriz(Pixel (*in)[width], int i, int j)
+void criarMatriz(Pixel (*in)[width], int i, int j, Pixel matriz[3][3])
 {
-    Pixel matriz[3][3] = {};
     int iNorte = i - 1;
     int jNorte = j;
 
@@ -223,30 +222,32 @@ Pixel **criarMatriz(Pixel (*in)[width], int i, int j)
         bool sudesteEhValido = iSudeste >= 0 && iSudeste <= width && jSudeste >= 0 && jSudeste <= height;
         matriz[2][2] = sudesteEhValido ? in[iSudeste][jSudeste] : in[iNoroeste][jNoroeste];
     }
-
-    return matriz;
 }
 
-Pixel *criarArrayDePixels(Pixel matriz[3][3])
+void criarArrayDePixels(Pixel array[9], Pixel matriz[3][3])
 {
-    Pixel array[9] = {
-        matriz[0][0],
-        matriz[0][1],
-        matriz[0][2],
-        matriz[1][0],
-        matriz[1][1],
-        matriz[1][2],
-        matriz[2][0],
-        matriz[2][1],
-        matriz[2][2],
-    };
-
-    return array;
+    int a, b;
+    int i = 0;
+    for (a = 0; a < 3; a++)
+    {
+        for (b = 0; b < 3; b++)
+        {
+            array[i] = matriz[a][b];
+            i = i + 1;
+        }
+    }
 }
 
 int transformaLuminancia(Pixel pixel)
 {
-    return 0;
+    return (0.59 * pixel.g) + (0.3 * pixel.r) + (0.11 * pixel.b);
+}
+
+int compararLuminancias(const void *x, const void *y)
+{
+    int pri = ((LuminanciaMap *)x)->luminancia;
+    int seg = ((LuminanciaMap *)y)->luminancia;
+    return (pri - seg);
 }
 
 // Aplica o algoritmo e gera a saída em pic[1]
@@ -271,20 +272,38 @@ void processa()
         for (int j = 0; j < width; j++)
         {
 
-            Pixel **matriz = criarMatriz(in, i, j);
+            Pixel matriz[3][3] = {{0}};
+            criarMatriz(in, i, j, matriz);
 
             // criar o array imutavel com os pixeis (com r, g, b)
-            Pixel *array = criarArrayDePixels(matriz);
+            Pixel array[9] = {};
+            criarArrayDePixels(array, matriz);
 
-            LuminanciaMap *luminanciaArray[9] = {};
+            LuminanciaMap luminanciaArray[9] = {};
 
-            for (int i = 0; i < 9; i++)
+            int count = 0;
+
+            while (count < 9)
             {
-                int luminancia = transformaLuminancia(array[i]);
-                int id = i;
+                int luminancia = transformaLuminancia(array[count]);
+                int id = count;
                 LuminanciaMap map = {luminancia, id};
-                luminanciaArray[i] = &map;
+                luminanciaArray[id] = map;
+                count = count + 1;
             }
+
+            qsort(luminanciaArray, 9, sizeof(int), compararLuminancias);
+
+            LuminanciaMap medianaMap = luminanciaArray[4];
+            Pixel mediana = array[medianaMap.id];
+            Pixel pixelOriginal = in[i][j];
+
+            unsigned char novoR = pixelOriginal.r - mediana.r < 0 ? 0 : pixelOriginal.r - mediana.r;
+            unsigned char novoG = pixelOriginal.g - mediana.g < 0 ? 0 : pixelOriginal.g - mediana.g;
+            unsigned char novoB = pixelOriginal.b - mediana.b < 0 ? 0 : pixelOriginal.b - mediana.b;
+
+            Pixel novoPixel = {novoR, novoG, novoB};
+            out[i][j] = novoPixel;
 
             // ordena o array de cima pela luminancia
             // pega mediana
