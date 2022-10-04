@@ -34,6 +34,12 @@ typedef struct
     Pixel *img;
 } Img;
 
+typedef struct
+{
+    int luminancia;
+    int id;
+} LuminanciaMap;
+
 // Protótipos
 void load(char *name, Img *pic);
 void processa();
@@ -48,6 +54,8 @@ int width, height;
 
 // Métodos próprios
 Pixel **criarMatriz(Pixel (*in)[width], int i, int j);
+Pixel *criarArrayDePixels(Pixel matriz[3][3]);
+int transformaLuminancia(Pixel pixel);
 
 // Fator de multiplicação do ruído
 int fator;
@@ -219,6 +227,28 @@ Pixel **criarMatriz(Pixel (*in)[width], int i, int j)
     return matriz;
 }
 
+Pixel *criarArrayDePixels(Pixel matriz[3][3])
+{
+    Pixel array[9] = {
+        matriz[0][0],
+        matriz[0][1],
+        matriz[0][2],
+        matriz[1][0],
+        matriz[1][1],
+        matriz[1][2],
+        matriz[2][0],
+        matriz[2][1],
+        matriz[2][2],
+    };
+
+    return array;
+}
+
+int transformaLuminancia(Pixel pixel)
+{
+    return 0;
+}
+
 // Aplica o algoritmo e gera a saída em pic[1]
 void processa()
 {
@@ -243,13 +273,19 @@ void processa()
 
             Pixel **matriz = criarMatriz(in, i, j);
 
-            out[i][j].r = 255 - in[i][j].r;
-            out[i][j].g = 255 - in[i][j].g;
-            out[i][j].b = 255 - in[i][j].b;
-
             // criar o array imutavel com os pixeis (com r, g, b)
-            // cria struct da luminancia com id
-            // cria um arrau com essas structs
+            Pixel *array = criarArrayDePixels(matriz);
+
+            LuminanciaMap *luminanciaArray[9] = {};
+
+            for (int i = 0; i < 9; i++)
+            {
+                int luminancia = transformaLuminancia(array[i]);
+                int id = i;
+                LuminanciaMap map = {luminancia, id};
+                luminanciaArray[i] = &map;
+            }
+
             // ordena o array de cima pela luminancia
             // pega mediana
             // pega a cor da mediana a partir do id dentro do array imutavel
@@ -257,6 +293,13 @@ void processa()
             // pixelOriginal.g = pixelOriginal.g - mediana.g < 0 ? 0 : pixelOriginal.g - mediana.g
             // pixelOriginal.b = pixelOriginal.b - mediana.b < 0 ? 0 : pixelOriginal.b - mediana.b
             // out[i][j] = pixelOriginal
+
+            // out[i][j].r = 255 - in[i][j].r;
+            // out[i][j].g = 255 - in[i][j].g;
+            // out[i][j].b = 255 - in[i][j].b;
+
+            // cria struct da luminancia com id
+            // cria um arrau com essas structs
         }
     }
 
