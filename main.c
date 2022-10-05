@@ -53,9 +53,10 @@ void keyboard(unsigned char key, int x, int y);
 int width, height;
 
 // Métodos próprios
-void criarMatriz(Pixel (*in)[width], int i, int j, Pixel matriz[3][3]);
-void criarArrayDePixels(Pixel array[9], Pixel matriz[3][3]);
-int transformaLuminancia(Pixel pixel);
+void criarMatriz(Pixel (*in)[width], int i, int j, Pixel *matriz[3][3]);
+void criarArrayDePixels(Pixel *array[9], Pixel *matriz[3][3]);
+int transformaLuminancia(unsigned char r, unsigned char g, unsigned char b);
+int compararLuminancias(const void *x, const void *y);
 
 // Fator de multiplicação do ruído
 int fator;
@@ -144,7 +145,7 @@ int main(int argc, char **argv)
     glutMainLoop();
 }
 
-void criarMatriz(Pixel (*in)[width], int i, int j, Pixel matriz[3][3])
+void criarMatriz(Pixel (*in)[width], int i, int j, Pixel *matriz[3][3])
 {
     int iNorte = i - 1;
     int jNorte = j;
@@ -180,67 +181,71 @@ void criarMatriz(Pixel (*in)[width], int i, int j, Pixel matriz[3][3])
     {
         Pixel sudeste = in[iSudeste][jSudeste];
         // sudoeste
-        matriz[2][0] = sudeste;
+        matriz[2][0] = &sudeste;
         // nordeste
-        matriz[0][2] = sudeste;
+        matriz[0][2] = &sudeste;
     }
 
     if (cantoSuperiorDireito || cantoInferiorEsquerdo)
     {
         Pixel sudoeste = in[iSudoeste][jSudoeste];
         // noroeste
-        matriz[0][0] = sudoeste;
+        matriz[0][0] = &sudoeste;
         // sudeste
-        matriz[2][2] = sudoeste;
+        matriz[2][2] = &sudoeste;
     }
 
-    matriz[1][1] = in[i][j];
+    matriz[1][1] = &in[i][j];
 
     bool norteEhValido = iNorte >= 0 && iNorte <= width && jNorte >= 0 && jNorte <= height;
-    matriz[0][1] = norteEhValido ? in[iNorte][jNorte] : in[iSul][jSul];
+    matriz[0][1] = norteEhValido ? &in[iNorte][jNorte] : &in[iSul][jSul];
     bool sulEhValido = iSul >= 0 && iSul <= width && jSul >= 0 && jSul <= height;
-    matriz[2][1] = sulEhValido ? in[iSul][jSul] : in[iNorte][jNorte];
+    matriz[2][1] = sulEhValido ? &in[iSul][jSul] : &in[iNorte][jNorte];
 
     bool lesteEhValido = iLeste >= 0 && iLeste <= width && jLeste >= 0 && jLeste <= height;
-    matriz[1][2] = lesteEhValido ? in[iLeste][jLeste] : in[iOeste][jOeste];
+    matriz[1][2] = lesteEhValido ? &in[iLeste][jLeste] : &in[iOeste][jOeste];
     bool oesteEhValido = iOeste >= 0 && iOeste <= width && jOeste >= 0 && jOeste <= height;
-    matriz[1][0] = oesteEhValido ? in[iOeste][jOeste] : in[iLeste][jLeste];
+    matriz[1][0] = oesteEhValido ? &in[iOeste][jOeste] : &in[iLeste][jLeste];
 
     if (!cantoSuperiorEsquerdo && !cantoInferiorDireito)
     {
 
         bool nordesteEhValido = iNordeste >= 0 && iNordeste <= width && jNordeste >= 0 && jNordeste <= height;
-        matriz[0][2] = nordesteEhValido ? in[iNordeste][jNordeste] : in[iSudoeste][jSudoeste];
+        matriz[0][2] = nordesteEhValido ? &in[iNordeste][jNordeste] : &in[iSudoeste][jSudoeste];
         bool sudoesteEhValido = iSudoeste >= 0 && iSudoeste <= width && jSudoeste >= 0 && jSudoeste <= height;
-        matriz[2][0] = sudoesteEhValido ? in[iSudoeste][jSudoeste] : in[iNordeste][jNordeste];
+        matriz[2][0] = sudoesteEhValido ? &in[iSudoeste][jSudoeste] : &in[iNordeste][jNordeste];
     }
 
     if (!cantoSuperiorDireito && !cantoInferiorEsquerdo)
     {
         bool noroesteEhValido = iNoroeste >= 0 && iNoroeste <= width && jNoroeste >= 0 && jNoroeste <= height;
-        matriz[0][0] = noroesteEhValido ? in[iNoroeste][jNoroeste] : in[iSudeste][jSudeste];
+        matriz[0][0] = noroesteEhValido ? &in[iNoroeste][jNoroeste] : &in[iSudeste][jSudeste];
         bool sudesteEhValido = iSudeste >= 0 && iSudeste <= width && jSudeste >= 0 && jSudeste <= height;
-        matriz[2][2] = sudesteEhValido ? in[iSudeste][jSudeste] : in[iNoroeste][jNoroeste];
+        matriz[2][2] = sudesteEhValido ? &in[iSudeste][jSudeste] : &in[iNoroeste][jNoroeste];
     }
 }
 
-void criarArrayDePixels(Pixel array[9], Pixel matriz[3][3])
+void criarArrayDePixels(Pixel *array[9], Pixel *matriz[3][3])
 {
     int a, b;
-    int i = 0;
+    int index = 0;
     for (a = 0; a < 3; a++)
     {
         for (b = 0; b < 3; b++)
         {
-            array[i] = matriz[a][b];
-            i = i + 1;
+            array[index] = matriz[a][b];
+            index = index + 1;
         }
     }
 }
 
-int transformaLuminancia(Pixel pixel)
+int transformaLuminancia(unsigned char r, unsigned char g, unsigned char b)
 {
-    return (0.59 * pixel.g) + (0.3 * pixel.r) + (0.11 * pixel.b);
+    int rInt = (int)r;
+    int gInt = (int)g;
+    int bInt = (int)b;
+    int result = ((int)(0.59 * gInt)) + ((int)(0.3 * rInt)) + ((int)(0.11 * bInt));
+    return result;
 }
 
 int compararLuminancias(const void *x, const void *y)
@@ -271,54 +276,45 @@ void processa()
     {
         for (int j = 0; j < width; j++)
         {
-
-            Pixel matriz[3][3] = {{0}};
+            // criar matriz 3x3 com espelhamento
+            Pixel *matriz[3][3] = {{}, {}, {}};
             criarMatriz(in, i, j, matriz);
 
             // criar o array imutavel com os pixeis (com r, g, b)
-            Pixel array[9] = {};
+            Pixel *array[9] = {};
             criarArrayDePixels(array, matriz);
 
+            // cria struct da luminancia com id
+            // cria um arrau com essas structs
             LuminanciaMap luminanciaArray[9] = {};
 
             int count = 0;
 
             while (count < 9)
             {
-                int luminancia = transformaLuminancia(array[count]);
+                Pixel pixel = *array[count];
+                int luminancia = transformaLuminancia(pixel.r, pixel.g, pixel.b);
                 int id = count;
                 LuminanciaMap map = {luminancia, id};
+                // popula array com mapa luminancia e id
                 luminanciaArray[id] = map;
                 count = count + 1;
             }
 
-            qsort(luminanciaArray, 9, sizeof(int), compararLuminancias);
+            // ordena o array de cima pela luminancia
+            qsort(luminanciaArray, 9, sizeof(LuminanciaMap), compararLuminancias);
 
             LuminanciaMap medianaMap = luminanciaArray[4];
-            Pixel mediana = array[medianaMap.id];
+            // pega a cor da mediana a partir do id dentro do array imutavel
+            Pixel *mediana = array[medianaMap.id];
             Pixel pixelOriginal = in[i][j];
 
-            unsigned char novoR = pixelOriginal.r - mediana.r < 0 ? 0 : pixelOriginal.r - mediana.r;
-            unsigned char novoG = pixelOriginal.g - mediana.g < 0 ? 0 : pixelOriginal.g - mediana.g;
-            unsigned char novoB = pixelOriginal.b - mediana.b < 0 ? 0 : pixelOriginal.b - mediana.b;
+            unsigned char novoR = pixelOriginal.r - mediana->r < 0 ? 0 : pixelOriginal.r - mediana->r;
+            unsigned char novoG = pixelOriginal.g - mediana->g < 0 ? 0 : pixelOriginal.g - mediana->g;
+            unsigned char novoB = pixelOriginal.b - mediana->b < 0 ? 0 : pixelOriginal.b - mediana->b;
 
-            Pixel novoPixel = {novoR, novoG, novoB};
+            Pixel novoPixel = {novoR * fator, novoG * fator, novoB * fator};
             out[i][j] = novoPixel;
-
-            // ordena o array de cima pela luminancia
-            // pega mediana
-            // pega a cor da mediana a partir do id dentro do array imutavel
-            // pixelOriginal.r = pixelOriginal.r - mediana.r < 0 ? 0 : pixelOriginal.r - mediana.r
-            // pixelOriginal.g = pixelOriginal.g - mediana.g < 0 ? 0 : pixelOriginal.g - mediana.g
-            // pixelOriginal.b = pixelOriginal.b - mediana.b < 0 ? 0 : pixelOriginal.b - mediana.b
-            // out[i][j] = pixelOriginal
-
-            // out[i][j].r = 255 - in[i][j].r;
-            // out[i][j].g = 255 - in[i][j].g;
-            // out[i][j].b = 255 - in[i][j].b;
-
-            // cria struct da luminancia com id
-            // cria um arrau com essas structs
         }
     }
 
